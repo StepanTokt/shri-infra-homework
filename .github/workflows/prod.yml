@@ -41,21 +41,9 @@ jobs:
           echo "Docker container shri-infra started."
           echo "Checking container status:"
           docker ps -a --filter "name=shri-infra" --format "table {{.ID}}\t{{.Names}}\t{{.Status}}"
-
-  create-github-tag:
-    needs: [deploy-release-to-prod]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Create GitHub tag
-        run: |
-          git tag ${{ github.event.inputs.release_version }}_fix${{ github.run_number }}
-          git push origin ${{ github.event.inputs.release_version }}_fix${{ github.run_number }}   
           
   add-comment-to-issue:
-    needs: [create-github-tag]
+    needs: [deploy-release-to-prod]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -112,5 +100,5 @@ jobs:
               body: `### Release Fix Information
               - **Date**: ${process.env.CURRENT_DATE}
               - **Author**: Stepan Tokt
-              - **Message**: Релиз выкачен в прод
+              - **Message**: Релиз выкачен в прод`
             });
