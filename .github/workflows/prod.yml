@@ -97,7 +97,7 @@ jobs:
               owner: 'StepanTokt',
               repo: 'shri-infra-homework',
               issue_number: issueNumber,
-              body: `### Release Fix Information
+              body: `### PROD Information
               - **Date**: ${process.env.CURRENT_DATE}
               - **Author**: Stepan Tokt
               - **Message**: Релиз выкачен в прод`
