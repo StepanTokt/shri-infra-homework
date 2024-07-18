@@ -33,17 +33,17 @@ jobs:
 
       - name: Deploy Docker image to VM
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.VIR_NAME }}@${{ secrets.PRODUCTION_SERVER_HOST }} << EOF
-            docker pull cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/shri-infra:${{ github.event.inputs.release_version }}_latest
-            docker stop shri-infra || true
-            docker rm shri-infra || true
-            docker run -d --name shri-infra -p 3000:3000 cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/shri-infra:${{ github.event.inputs.release_version }}_latest
-            echo "Docker container shri-infra started."
-            echo "Checking container status:"
-            docker ps -a --filter "name=shri-infra" --format "table {{.ID}}\t{{.Names}}\t{{.Status}}"
-          EOF
+          ssh -o StrictHostKeyChecking=no ${{ secrets.VIR_NAME }}@${{ secrets.PRODUCTION_SERVER_HOST }}
+          docker pull cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/shri-infra:${{ github.event.inputs.release_version }}_latest
+          docker stop shri-infra || true
+          docker rm shri-infra || true
+          docker run -d --name shri-infra -p 3000:3000 cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/shri-infra:${{ github.event.inputs.release_version }}_latest
+          echo "Docker container shri-infra started."
+          echo "Checking container status:"
+          docker ps -a --filter "name=shri-infra" --format "table {{.ID}}\t{{.Names}}\t{{.Status}}"
 
   create-github-tag:
+    needs: [deploy-release-to-prod]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -52,8 +52,8 @@ jobs:
       - name: Create GitHub tag
         run: |
           git tag ${{ github.event.inputs.release_version }}_fix${{ github.run_number }}
-          git push origin ${{ github.event.inputs.release_version }}_fix${{ github.run_number }}
-
+          git push origin ${{ github.event.inputs.release_version }}_fix${{ github.run_number }}   
+          
   add-comment-to-issue:
     needs: [create-github-tag]
     runs-on: ubuntu-latest
