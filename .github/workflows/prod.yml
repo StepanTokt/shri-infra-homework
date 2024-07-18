@@ -41,3 +41,64 @@ jobs:
           echo "Docker container shri-infra started."
           echo "Checking container status:"
           docker ps -a --filter "name=shri-infra" --format "table {{.ID}}\t{{.Names}}\t{{.Status}}"
+     
+  add-comment-to-issue:
+    needs: [create-github-tag]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Get previous release tag
+        id: get-previous-tag
+        run: |
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ || echo "No previous tag")
+          echo "PREV_TAG=$PREV_TAG" >> $GITHUB_ENV
+
+      - name: Get list of commits
+        id: get-commits
+        run: |
+          if [ "${{ env.PREV_TAG }}" != "No previous tag" ]; then
+            COMMITS=$(git log --pretty=format:"%h - %s" ${{ env.PREV_TAG }}..HEAD)
+          else
+            COMMITS=$(git log --pretty=format:"%h - %s" HEAD)
+          fi
+          echo "COMMITS=$COMMITS" >> $GITHUB_ENV
+
+      - name: Set current date
+        run: echo "CURRENT_DATE=$(date +%Y-%m-%d)" >> $GITHUB_ENV
+
+      - name: Create GitHub Issue comment
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const releaseVersion = "${{ github.event.inputs.release_version }}";
+            const issues = await github.rest.issues.listForRepo({
+              owner: 'StepanTokt',
+              repo: 'shri-infra-homework',
+              state: 'open',
+              headers: {
+                'X-GitHub-Api-Version': '2022-11-28'
+              }
+            });
+
+            // Находим номер нужного issue по заголовку
+            const issue = issues.data.find(issue => issue.title.startsWith(`Release ${releaseVersion}`));
+            let issueNumber;
+            if (issue) {
+              issueNumber = issue.number;
+            } else {
+              throw new Error(`Issue with title starting with "Release ${releaseVersion}" not found`);
+            }
+
+            // Создаем комментарий
+            await github.rest.issues.createComment({
+              owner: 'StepanTokt',
+              repo: 'shri-infra-homework',
+              issue_number: issueNumber,
+              body: `### Release Fix Information
+              - **Date**: ${process.env.CURRENT_DATE}
+              - **Author**: Stepan Tokt
+              - **Message**: Релиз выкачен в прод
+            });
